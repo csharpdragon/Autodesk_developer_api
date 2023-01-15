@@ -37,16 +37,23 @@
             get { return folderType; }
             set { folderType = value; }
         }
+
+        public string FolderPath
+        {
+            get { return folderPath; }
+            set { folderPath = value; }
+        }
         #endregion
 
         #region Constructor
-        public AutoFolder(string hubId, string projectId, string folderId, string folderName, string folderType)
+        public AutoFolder(string hubId, string projectId, string folderId, string folderName, string folderType, string folderPath)
         {
             this.hubId = hubId;
             this.projectId = projectId;
             this.folderId = folderId;
             this.folderName = folderName;
             this.folderType = folderType;
+            this.folderPath = folderPath;
         }
         public AutoFolder()
         {
@@ -55,6 +62,7 @@
             this.folderId = string.Empty;
             this.folderName = string.Empty;
             this.folderType = string.Empty;
+            this.folderPath = string.Empty;
         }
         #endregion
 

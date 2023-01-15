@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using AdvLibrary.ForgeApi.Model;
@@ -10,7 +9,6 @@ using Autodesk.Forge.Model;
 using Autodesk.Forge.Client;
 using System.Net.Http;
 using System.Net.Http.Headers;
-
 using RestSharp;
 
 namespace AdvLibrary.ForgeApi
@@ -20,7 +18,6 @@ namespace AdvLibrary.ForgeApi
 
         private ExceptionFactory _exceptionFactory = (string name, RestResponse response) => null;
 
-  
         public ExceptionFactory ExceptionFactory
         {
             get
@@ -37,32 +34,17 @@ namespace AdvLibrary.ForgeApi
                 _exceptionFactory = value;
             }
         }
-
         #region constants
         const string baseURL = "https://developer.api.autodesk.com";
         
         #endregion
-
         #region Private Members
-        private string client_id;
-        private string client_secret;
         private string token;
-        private string refresh_token;
-        private string code;
         private string redirecturl = "http://localhost:8080/api/auth/callback";
+        private int retryafter = 0;
         #endregion
 
         #region Public Properties
-        public string ClientId
-        {
-            get { return client_id; }
-            set { client_id = value; }
-        }
-        public string ClientSecret
-        {
-            get { return client_secret; }
-            set { client_secret = value; }
-        }
         public string Token
         {
             get { return token; }
@@ -70,118 +52,14 @@ namespace AdvLibrary.ForgeApi
         }
         #endregion
 
-
-        public static HttpListener listener;
-        public static string url = "http://localhost:8080/";
-        public static int pageViews = 0;
-        public static int requestCount = 0;
-
-        public static string pageData =
-            "<!DOCTYPE>" +
-            "<html>" +
-            "  <head>" +
-            "    <title>HttpListener Example</title>" +
-            "  </head>" +
-            "  <body>" +
-                "<h1>You authorized</h1>" +
-            "  </body>" +
-            "</html>";
-        public async Task<String> HandleIncomingConnections()
-        {
-            bool runServer = true;
-            String code = "";
-            // While a user hasn't visited the `shutdown` url, keep on handling requests
-            while (runServer)
-            {
-                // Will wait here until we hear from a connection
-                HttpListenerContext ctx = await listener.GetContextAsync();
-
-                // Peel out the requests and response objects
-                HttpListenerRequest req = ctx.Request;
-                HttpListenerResponse resp = ctx.Response;
-
-                
-                // If `shutdown` url requested w/ POST, then shutdown the server after serving the page
-                if ((req.HttpMethod == "GET" && req.Url.AbsolutePath=="/api/auth/callback"))
-                {
-                    runServer = false;
-                    code=req.QueryString["code"];
-                }
-
-                byte[] data = Encoding.UTF8.GetBytes(pageData);
-                resp.ContentType = "text/html";
-                resp.ContentEncoding = Encoding.UTF8;
-                resp.ContentLength64 = data.LongLength;
-
-                // Write out to the response stream (asynchronously), then close it
-                await resp.OutputStream.WriteAsync(data, 0, data.Length);
-                resp.Close();
-                //                resp.Close();
-            }
-            return code;
-        }
-
         #region Constructor
-        public DataManagement(string client_id, string client_secret)
+        public DataManagement(string token)
         {
-            this.client_id = client_id;
-            this.client_secret = client_secret;
-            // Get the token
-            //
-  //          this.token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IlU3c0dGRldUTzlBekNhSzBqZURRM2dQZXBURVdWN2VhIn0.eyJzY29wZSI6WyJkYXRhOmNyZWF0ZSIsImRhdGE6d3JpdGUiLCJkYXRhOnJlYWQiXSwiY2xpZW50X2lkIjoiejlBbnhPaHJ5eGNUU1R6eUEyb1JSSkNhaVlHSU1yNmciLCJhdWQiOiJodHRwczovL2F1dG9kZXNrLmNvbS9hdWQvYWp3dGV4cDYwIiwianRpIjoiSDltMllETFJJM0JpTVhVQk9OcnJ2ejNGbWJya2w5MkJUYnFWcExycndRbGhoOFlZazRTVWpsa0wxMHBSMHlQeSIsInVzZXJpZCI6IkhGUEpGV1FIS0RQU1Y3OFoiLCJleHAiOjE2NzM0ODA4MTJ9.FHvexKe53MPwhre6kRBpeffM80LkJBqQ7oNm3RzhTiKmyYhimw1WB8h-ChhKaCm7CtVn8DSrsmnK6JnZgkMcvBfFx6Ah53VqbRlQv1OalDCQK2TX7ANG0Mq7Hh0n1VhVDC-vBxZEfz6GtUBW4qJ4gMeokwr-V52Ju6kZ4CLGPKv0dwHGpw1vS_Kxv86hogRUgXyErDoCrxNrLWALpERqMY1WN-tArmYdTAc5wVb_1eXUGwE0P-Ilbxm6oAaOQg_e512wKc79ofjOoi8up2RtZ1I42Za_X4TufTWpM1Fe1G5v1R0JuMlLFaSucHzv0lkpBENf9jPJ8E3PM9AsAMCTCw";
-            this.code=GetCode().Result;
-
+            this.token = token;
         }
         #endregion
-        public async Task<string> GetCode()
-        {
-            
-            var requesturl = $"https://developer.api.autodesk.com/authentication/v1/authorize?response_type=code&client_id={client_id}&redirect_uri={redirecturl}&scope=data:create%20data:read%20data:write";
-            System.Diagnostics.Process.Start(requesturl);
 
-            listener = new HttpListener();
-            listener.Prefixes.Add(url);
-            listener.Start();
-            Console.WriteLine("Listening for connections on {0}", url);
-
-            // Handle requests
-            Task<string> listenTask = HandleIncomingConnections();
-
-            this.code = listenTask.Result;
-
-            GetToken();
-            // Close the listener
-            listener.Close();
-            return code;
-
-        }
-        public async Task GetToken()
-        {
-            string grantType = "authorization_code";
-            
-            List<KeyValuePair<string, string>> postData=new List<KeyValuePair<string, string>>();
-
-            postData.Add(new KeyValuePair<string, string>("client_id",client_id));
-            postData.Add(new KeyValuePair<string, string>("client_secret", client_secret));
-            postData.Add(new KeyValuePair<string, string>("grant_type", grantType));
-            postData.Add(new KeyValuePair<string, string>("redirect_uri", redirecturl));
-            postData.Add(new KeyValuePair<string, string>("code", code));
-            string jsonResponse = string.Empty;
-            var client = new HttpClient();
-            try
-            {
-                HttpResponseMessage result1=client.PostAsync("https://developer.api.autodesk.com/authentication/v1/gettoken", new FormUrlEncodedContent(postData)).GetAwaiter().GetResult();
-                jsonResponse = result1.Content.ReadAsStringAsync().Result;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-            JObject json = JObject.Parse(jsonResponse);
-            this.token = json["access_token"].ToString();
-            this.refresh_token= json["refresh_token"].ToString();
-        }
-
+        #region public functions
         public async Task<IList<AutoHub>> GetHubsAsync()
         {
             IList<AutoHub> nodes = new List<AutoHub>();
@@ -222,7 +100,7 @@ namespace AdvLibrary.ForgeApi
             return nodes;
         }
 
-        public async Task<IList<AutoFolder>> GetFoldersAsync(string hubId, string projectId)
+        public async Task<IList<AutoFolder>> GetTopFoldersAsync(string hubId, string projectId)
         {
 
             IList<AutoFolder> nodes = new List<AutoFolder>();
@@ -236,10 +114,9 @@ namespace AdvLibrary.ForgeApi
                 string folderId = folderInfo.Value.id;
                 string folderName = folderInfo.Value.attributes.displayName;
                 string folderType = folderInfo.Value.type;
-                AutoFolder folder = new AutoFolder(hubId, projectId, folderId, folderName, folderType);
+                AutoFolder folder = new AutoFolder(hubId, projectId, folderId, folderName, folderType, folderName);
                 nodes.Add(folder);
             }
-
             return nodes;
         }
 
@@ -250,32 +127,159 @@ namespace AdvLibrary.ForgeApi
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("Authorization",$"Bearer {token}");
             string jsonResponse = string.Empty;
-            try
+            HttpResponseHeaders headers = null;
+            bool passed = false;
+            while (!passed)
             {
-                HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents?filter[attributes.extension.type]=items%3Aautodesk.bim360%3AC4RModel").GetAwaiter().GetResult();
-                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                try
+                {
+                    HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents?filter[attributes.extension.type]=items%3Aautodesk.bim360%3AC4RModel").GetAwaiter().GetResult();
+                    jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                    headers = result1.Headers;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+                
+                if (headers.RetryAfter != null && headers.RetryAfter.ToString() != "")
+                {
+                    retryafter = int.Parse(headers.RetryAfter.ToString());
+                    Console.WriteLine($"Quota limit exceed. Retry after {retryafter} seconds");
+                    await Task.Delay(retryafter * 1000);
+                }
+                else
+                {
+                    passed = true;
+                }
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-
 
             JObject json = JObject.Parse(jsonResponse);
-            JArray array = (JArray)json["data"];
-            for(int i = 0; i < array.Count; i++)
+            JArray dataArray = (JArray)json["data"];
+            JArray includedArray = (JArray)json["included"];
+            for (int i = 0; i < dataArray.Count; i++)
             {
-                string contentId = array[i]["id"].ToString();
-                string contentName = array[i]["attributes"]["displayName"].ToString();
-                string contentType = array[i]["type"].ToString();
-                AutoFile content = new AutoFile(contentId, projectId, folderId, contentName, contentType);
+                string contentId = dataArray[i]["id"].ToString();
+                string contentName = dataArray[i]["attributes"]["displayName"].ToString();
+                string contentType = dataArray[i]["type"].ToString();
+                string createtime = includedArray[i]["attributes"]["createTime"].ToString();
+                string createUserId = includedArray[i]["attributes"]["createUserId"].ToString();
+                string createUserName = includedArray[i]["attributes"]["createUserName"].ToString();
+                string lastModifiedTime = includedArray[i]["attributes"]["lastModifiedTime"].ToString();
+                string lastModifiedUserId = includedArray[i]["attributes"]["lastModifiedUserId"].ToString();
+                string lastModifiedUserName = includedArray[i]["attributes"]["lastModifiedUserName"].ToString();
+                string versionNumber = includedArray[i]["attributes"]["versionNumber"].ToString();
+                string mimeType = includedArray[i]["attributes"]["mimeType"].ToString();
+                string storageSize = includedArray[i]["attributes"]["storageSize"].ToString();
+                string fileType = includedArray[i]["attributes"]["fileType"].ToString();
+                AutoFile content = new AutoFile();
+
+                content.ContentId = contentId;
+                content.ProjectId = projectId;
+                content.FolderId = folderId;
+                content.Name = contentName;
+                content.Type = contentType;
+                content.CreateTime = createtime;
+                content.CreateUserId = createUserId;
+                content.CreateUserName = createUserName;
+                content.LastModifiedTime = lastModifiedTime;
+                content.LastModifiedUserId = lastModifiedUserId;
+                content.LastModifiedUserName = lastModifiedUserName;
+                content.VersionNumber = versionNumber;
+                content.MimeType = mimeType;
+                content.StorageSize = storageSize;
+                content.FileType = fileType;
+                
+                AutoFileExtension extension = new AutoFileExtension();
+                extension.version = includedArray[i]["attributes"]["extension"]["version"].ToString();
+                extension.modelVersion = includedArray[i]["attributes"]["extension"]["data"]["modelVersion"].ToString();
+                extension.projectGuid = includedArray[i]["attributes"]["extension"]["data"]["projectGuid"].ToString();
+                extension.originalItemUrn = includedArray[i]["attributes"]["extension"]["data"]["originalItemUrn"].ToString();
+                extension.isCompositeDesign = includedArray[i]["attributes"]["extension"]["data"]["isCompositeDesign"].ToString();
+                extension.modelType = includedArray[i]["attributes"]["extension"]["data"]["modelType"].ToString();
+                extension.mimeType = includedArray[i]["attributes"]["extension"]["data"]["mimeType"].ToString();
+                extension.modelGuid = includedArray[i]["attributes"]["extension"]["data"]["modelGuid"].ToString();
+                extension.processState = includedArray[i]["attributes"]["extension"]["data"]["processState"].ToString();
+                extension.extractionState = includedArray[i]["attributes"]["extension"]["data"]["extractionState"].ToString();
+                extension.splittingState = includedArray[i]["attributes"]["extension"]["data"]["splittingState"].ToString();
+                extension.reviewState = includedArray[i]["attributes"]["extension"]["data"]["reviewState"].ToString();
+                extension.revisionDisplayLabel = includedArray[i]["attributes"]["extension"]["data"]["revisionDisplayLabel"].ToString();
+                extension.sourceFileName = includedArray[i]["attributes"]["extension"]["data"]["sourceFileName"].ToString();
+                extension.conformingStatus = includedArray[i]["attributes"]["extension"]["data"]["conformingStatus"].ToString();
+
+                content.Extension = extension;
+
                 nodes.Add(content);
             }
             return nodes;
         }
 
+        public async Task<IList<AutoFolder>> GetFoldersAsync(string hubId, string projectId)
+        {
+            IList<AutoFolder> nodes = await GetTopFoldersAsync(hubId, projectId);
+            int index = 0;
+            while (index < nodes.Count)
+            {
+                var subfolders = GetSubFoldersAsync(hubId,projectId, nodes[index].FolderId, nodes[index].FolderPath).Result;
+                for(var i=0;i<subfolders.Count; i++)
+                    nodes.Add(subfolders[i]);
+                index++;
+            }
+            return nodes;
+        }
+
+        public async Task<IList<AutoFolder>> GetSubFoldersAsync(string hubId, string projectId, string folderId, string parentfolderPath)
+        {
+            IList<AutoFolder> nodes = new List<AutoFolder>();
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            string jsonResponse = string.Empty;
+            HttpResponseHeaders headers=null;
+            bool passed = false;
+            while (!passed)
+            {
+                try
+                {
+                    HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents").GetAwaiter().GetResult();
+                    jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                    headers = result1.Headers;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+
+                if (headers.RetryAfter != null && headers.RetryAfter.ToString() != "")
+                {
+                    retryafter = int.Parse(headers.RetryAfter.ToString());
+                    Console.WriteLine($"Quota limit exceed. Retry after {retryafter} seconds");
+                    await Task.Delay(retryafter * 1000);
+                }
+                else
+                {
+                    passed = true;
+                }
+            }
+
+            JObject json = JObject.Parse(jsonResponse);
+            JArray array = (JArray)json["data"];
+            for (int i = 0; i < array.Count; i++)
+            {
+                if(array[i]["type"].ToString() == "folders")
+                {
+                    string contentId = array[i]["id"].ToString();
+                    string contentName = array[i]["attributes"]["displayName"].ToString();
+                    string contentType = array[i]["type"].ToString();
+                    AutoFolder content = new AutoFolder(hubId, projectId, contentId, contentName, contentType, parentfolderPath+ "/contentName");
+                    nodes.Add(content);
+                }
+            }
+            return nodes;
+        }
+
         // to verify whether a model needs to be published, item Type should be 'items'
-        public async Task<bool> IsNeedPublishAsync(string projectId, string folderId, string fileId)
+        public bool IsNeedPublishAsync(string projectId, string folderId, string fileId)
         {
             //Your code here will Verify Whether a Model Needs to Be Published, return true/false
             if (projectId == null)
@@ -342,14 +346,16 @@ namespace AdvLibrary.ForgeApi
             }
 
             JObject json = JObject.Parse(jsonResponse);
+            if (string.IsNullOrEmpty(json["data"].ToString()))
+            {
+                return true;
+            }
+
             if (json["errors"] != null)
             {
                 throw new Exception(json["errors"][0]["detail"].ToString());
             }
-            if (json["data"] != null)
-            {
-                return false;
-            }
+           
             if (json["data"]["attributes"]["status"].ToString()== "processing" || json["data"]["attributes"]["status"].ToString() == "complete")
             {
                 return false;
@@ -358,7 +364,7 @@ namespace AdvLibrary.ForgeApi
 
         }
 
-        public async Task<string> DoPublishLatestAsync(string projectId, string folderId, string fileId)
+        public string DoPublishLatestAsync(string projectId, string folderId, string fileId)
         {
             //if sucess return "committed" string
 
@@ -433,7 +439,7 @@ namespace AdvLibrary.ForgeApi
             return json["data"]["attributes"]["status"].ToString();
         }
 
-        public async Task<bool> HasFinishedPublishingAsync(string projectId, string folderId, string fileId)
+        public bool HasFinishedPublishingAsync(string projectId, string folderId, string fileId)
         {
             //Your code here Verify the Model Has Finished Publishing, return true/false
 
@@ -457,21 +463,18 @@ namespace AdvLibrary.ForgeApi
             {
                 for (int i = 0; i < array.Count; i++)
                 {
-                   if (json["included"][0]["attributes"]["extension"]["data"]["extractionState"].ToString()!= "SUCCESS")
+                   if (json["included"][i]["attributes"]["extension"]["data"]["processState"].ToString()!= "PROCESSING_COMPLETE")
                         return false;
                 }
             }
             catch(Exception e)
             {
                 throw new Exception(e.ToString());
-   //             return false;
             }
-
+                
             return true;
         }
 
-
+        #endregion
     }
-    
-    
 }
