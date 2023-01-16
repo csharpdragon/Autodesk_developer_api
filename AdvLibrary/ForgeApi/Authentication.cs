@@ -21,6 +21,14 @@ namespace AdvLibrary.ForgeApi
         private static HttpListener listener;
         private static string url = "http://localhost:8080/";
 
+
+        /// <summary>
+        /// //for design automation
+        /// </summary>
+        private string designToken="";
+        private int designexpiresIn = 0;
+        private DateTime lastGotTokenTime;
+
         private static string pageData =
             "<!DOCTYPE>" +
             "<html>" +
@@ -35,6 +43,19 @@ namespace AdvLibrary.ForgeApi
         #endregion
 
         #region Public Properties
+
+        public string DesignToken
+        {
+            get { return designToken; }
+            set { designToken = value; }
+        }
+
+        public int DesignTokenExpiresIn
+        {
+            get { return designexpiresIn; }
+            set { designexpiresIn = value; }
+        }
+
         public string ClientId
         {
             get { return client_id; }
@@ -69,8 +90,15 @@ namespace AdvLibrary.ForgeApi
         {
             this.client_id = client_id;
             this.client_secret = client_secret;
-            this.refresh_token = rfresh_token;
-            GetTokenFromRefreshToken(this.refresh_token);
+            if (string.IsNullOrEmpty(rfresh_token))
+            {
+                this.code = GetCode();
+            }
+            else
+            {
+                this.refresh_token = rfresh_token;
+                GetTokenFromRefreshToken(this.refresh_token);
+            }
         }
         #endregion
 
@@ -154,12 +182,17 @@ namespace AdvLibrary.ForgeApi
             try
             {
 
-                this.token = json["access_token"].ToString();
-                this.refresh_token = json["refresh_token"].ToString();
+                this.token = json["access_token"]?.ToString();
+                this.refresh_token = json["refresh_token"]?.ToString();
+                if(string.IsNullOrEmpty(this.token)) { 
+                    this.code = GetCode(); 
+                }
             }
             catch (Exception e)
             {
-                throw new Exception(json["developerMessage"].ToString());
+                if (!string.IsNullOrEmpty(json["developerMessage"].ToString())) {
+                    this.code = GetCode();
+                }
             }
 
         }
@@ -192,6 +225,50 @@ namespace AdvLibrary.ForgeApi
             this.token = json["access_token"].ToString();
             this.refresh_token = json["refresh_token"].ToString();
         }
+
+
+        public string GetDesignAutomationToken()
+        {
+            string grantType = "client_credentials";
+
+            List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
+
+            postData.Add(new KeyValuePair<string, string>("client_id", client_id));
+            postData.Add(new KeyValuePair<string, string>("client_secret", client_secret));
+            postData.Add(new KeyValuePair<string, string>("grant_type", grantType));
+            postData.Add(new KeyValuePair<string, string>("scope", "code:all data:create data:write data:read bucket:create bucket:delete"));
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            try
+            {
+                HttpResponseMessage result1 = client.PostAsync("https://developer.api.autodesk.com/authentication/v1/authenticate", new FormUrlEncodedContent(postData)).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            JObject json = JObject.Parse(jsonResponse);
+
+            try
+            {
+                this.designToken = json["access_token"]?.ToString();
+                this.designexpiresIn = int.Parse(json["expires_in"]?.ToString());
+            }
+            catch (Exception e)
+            {
+                if (!string.IsNullOrEmpty(json["developerMessage"].ToString()))
+                {
+                    throw new Exception(json["developerMessage"].ToString());
+                }
+                else { throw new Exception(e.ToString()); }
+            }
+
+            this.lastGotTokenTime = DateTime.Now;
+
+            return this.designToken;
+        }
+
         #endregion
     }
 }
