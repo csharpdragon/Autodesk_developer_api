@@ -149,7 +149,7 @@ namespace AdvLibrary.ForgeApi
         public string EndPointUrl;
         public string version;
         public string AppKey;
-
+        public string AppaliasName;
         public bool RegisterAppBundle(string appId, string appEngine,string appDescription)
         {
 
@@ -291,6 +291,7 @@ namespace AdvLibrary.ForgeApi
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if (result1.StatusCode == HttpStatusCode.OK)
                 {
+                    AppaliasName = aliasname;
                     return true;
                 }
                 else
@@ -401,6 +402,7 @@ namespace AdvLibrary.ForgeApi
                 }
                 if (httpResponse.StatusCode == HttpStatusCode.OK)
                 {
+                    AppaliasName = aliasName;
                     return true;
                 }
             }
@@ -436,6 +438,100 @@ namespace AdvLibrary.ForgeApi
             return false;
         }
         #endregion
+        #endregion
+
+        #region Task 5
+        public bool CreateNewActivity(string nickname,string appid,string alias,string activityId,string rvtfilePath)
+        {
+            object sedingData = new
+            {
+                id = activityId,
+                commandLine = new object[] { $"$(engine.path)\\\\revitcoreconsole.exe /i \"$(args[rvtFile].path)\" /al \"$(appbundles[{appid}].path)\"" },
+                parameters = new
+                {
+                    rvtFile = new
+                    {
+                        zip = false,
+                        ondemand = false,
+                        verb = "get",
+                        description = "Input Revit model",
+                        required = true,
+                        localName = rvtfilePath,
+                    },
+                    result = new
+                    {
+                        zip = false,
+                        ondemand =false,
+                        verb = "put",
+                        description ="Result",
+                        required ="true",
+                        localName = "result.txt"
+                    }
+                },
+                engine=AppEngine,
+                appbundles =new object[] {$"{nickname}.{appid}+{alias}"}
+            };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/activities");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            JObject json = JObject.Parse(jsonResponse);
+            
+            return true;
+
+        }
+
+        public bool CreateActivtyAlias(string activityid,string aliasName)
+        {
+            object sedingData = new
+            {
+                version=1,
+                id=aliasName
+            };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/activities");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            JObject json = JObject.Parse(jsonResponse);
+
+            return true;
+        }
         #endregion
         #endregion
     }

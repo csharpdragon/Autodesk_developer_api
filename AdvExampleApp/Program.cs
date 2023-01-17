@@ -20,23 +20,25 @@ namespace AdvExampleApp
 
 
             /////create your nickname
-            //  designAutomation.CreateNickName("pdragon0512");
+            //  designAutomation.CreateNickName("pdragon");
             /////
 
+            var nickname = "pdragon";
 
             ///////task 4
 
             var existiedBundle = false;
-            var appId = "DeleteWallsApp15";
-            if (designAutomation.RegisterAppBundle(appId, "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018"))
+            var appId = "CountSampleApp3";
+            var alias = "test1";
+            if (designAutomation.RegisterAppBundle(appId, "Autodesk.Revit+2018", "Count AppBundle based on Revit 2023"))
             {
-                if (designAutomation.UploadAppBundle("C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip"))
+                if (designAutomation.UploadAppBundle("D:\\CountSampeApp.7z"))
                 {
                     Console.WriteLine("uploaded");
                 }
                 else { Console.WriteLine("failed"); }
 
-                if (existiedBundle = designAutomation.CreateAliasForAppBundle(appId,"test1"))
+                if (existiedBundle = designAutomation.CreateAliasForAppBundle(appId, alias))
                 {
                     Console.WriteLine("alias created");
                 }
@@ -46,7 +48,7 @@ namespace AdvExampleApp
             //*update part*//
             if (existiedBundle)
             {
-                if(designAutomation.UpdateExistingAppBundle(appId, "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018 Update", "C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip", "test1"))
+                if(designAutomation.UpdateExistingAppBundle(appId, "Autodesk.Revit+2022", "Count AppBundle based on Revit 2022 Update", "D:\\CountSampeApp.7z", alias))
                 {
                     Console.WriteLine("updated");
                 }
@@ -60,6 +62,15 @@ namespace AdvExampleApp
             //  UpdateExistingAppBundle("DeleteWallsApp5")
             //////end task 4
 
+
+            /////for task 5
+            var activityAlias = "test";
+            if (designAutomation.CreateNewActivity(nickname, appId, alias, "countActivity", "D:\\DeleteWalls.rvt"))
+            {
+
+            }
+
+            ////end for task 5
         }
     }
     }
