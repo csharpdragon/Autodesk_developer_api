@@ -266,7 +266,7 @@ namespace AdvLibrary.ForgeApi
             return false;
         }
         
-        public bool CreateAliasForAppBundle(string aliasname)
+        public bool CreateAliasForAppBundle(string appId,string aliasname)
         {
             object sedingData = new
             {
@@ -283,7 +283,7 @@ namespace AdvLibrary.ForgeApi
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");            
   //          AppId = "DeleteWallsApp5";
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{AppId}/aliases");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{appId}/aliases");
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
@@ -329,9 +329,9 @@ namespace AdvLibrary.ForgeApi
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
             var tempId = appId;
-            tempId = "DeleteWallsApp5";
+//            tempId = "DeleteWallsApp5";
 
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{tempId}/aliases");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{tempId}/versions");
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             
             try
@@ -385,7 +385,7 @@ namespace AdvLibrary.ForgeApi
             httpRequest.Headers["Authorization"] = "Bearer " + token;
             httpRequest.ContentType = "application/json";
 
-            var data = new { nickname = version };
+            var data = new { version = version };
 
             using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
             {

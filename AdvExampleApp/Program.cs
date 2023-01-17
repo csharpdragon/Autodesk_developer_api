@@ -27,15 +27,16 @@ namespace AdvExampleApp
             ///////task 4
 
             var existiedBundle = false;
-            if(designAutomation.RegisterAppBundle("DeleteWallsApp11", "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018"))
+            var appId = "DeleteWallsApp15";
+            if (designAutomation.RegisterAppBundle(appId, "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018"))
             {
-                if (existiedBundle = designAutomation.UploadAppBundle("C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip"))
+                if (designAutomation.UploadAppBundle("C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip"))
                 {
                     Console.WriteLine("uploaded");
                 }
                 else { Console.WriteLine("failed"); }
 
-                if (designAutomation.CreateAliasForAppBundle("test1"))
+                if (existiedBundle = designAutomation.CreateAliasForAppBundle(appId,"test1"))
                 {
                     Console.WriteLine("alias created");
                 }
@@ -45,7 +46,7 @@ namespace AdvExampleApp
             //*update part*//
             if (existiedBundle)
             {
-                if(designAutomation.UpdateExistingAppBundle("DeleteWallsApp11", "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018 Update", "C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip", "test1"))
+                if(designAutomation.UpdateExistingAppBundle(appId, "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018 Update", "C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip", "test1"))
                 {
                     Console.WriteLine("updated");
                 }
