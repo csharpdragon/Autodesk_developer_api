@@ -10,94 +10,55 @@ namespace AdvExampleApp
         static void Main(string[] args)
         {
 
-//            var designAutomation1 = new DesignAutomation();
-
-
-
             string client_id = "z9AnxOhryxcTSTzyA2oRRJCaiYGIMr6g";
             string client_secret = "Mc7fd0f574c8b4e2";
             var authenticate = new Authentication(client_id, client_secret, "V5MzzOzwgIPMbC3NDzlkyKSPsUYo48I25cUIMzkcPb");
 
 
-            ////////////////////designAutomation part
-            //
             var dtoken= authenticate.GetDesignAutomationToken();
             var designAutomation = new DesignAutomation(dtoken);
- 
-//            designAutomation.CreateNickName("pdragon0512");
-            designAutomation.RegisterAppBundle("DeleteWallsApp5", "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018");
-            designAutomation.UploadAppBundle("C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip");
-
-            //var authenticate = new Authentication(client_id, client_secret);
-
-            /*
-             ///if you use refresh token you can use like this            
-             var authenticate = new Authentication(client_id, client_secret, refresh_token);
-             ex:  var authenticate = new Authentication(client_id, client_secret, "V5MzzOzwgIPMbC3NDzlkyKSPsUYo48I25cUIMzkcPb");
-            */
-
-            ///////////////////designAutomation part
-            var refreshtoken = authenticate.Refresh_token;
-
-            
-            var forge = new DataManagement(authenticate.Token);
-
-            var hubs = new List<AutoHub>();
-            var projects = new List<AutoProject>();
-            var folders = new List<AutoFolder>();
-            var files = new List<AutoFile>();
-
-            //Here I will get a list of hubs and select myHub based on some properties
-            hubs = new List<AutoHub>(forge.GetHubsAsync().Result);
-            AutoHub myHub = hubs.Where(x => x.HubName == "ADV").First();
 
 
-           
-            //Here I will pass myHub to get a list of all projects in the Hub and select a project
-            projects = new List<AutoProject>(forge.GetProjectsAsync(myHub.HubId).Result);
-            AutoProject myProject = projects.Where(x => x.ProjectName == "Emek Hospital").First();
-         
-           
-
-             //Here I will pass myProject to get list of all folder paths in the project
-             folders = new List<AutoFolder>(forge.GetFoldersAsync(myHub.HubId,myProject.ProjectId).Result);
+            /////create your nickname
+            //  designAutomation.CreateNickName("pdragon0512");
+            /////
 
 
-             AutoFolder myFolder = folders.Where(x => x.FolderName == "Project Files").First();
-           
-            //Here I will pass myFolder to get list of all files in the folder and select a revit model
-            files = new List<AutoFile>(forge.GetFilesAsync(myProject.ProjectId,myFolder.FolderId).Result);
-            AutoFile myFile = files.Where(x => x.Name == "Emek_Hospital_Superposition_2021_V2.rvt").First();
+            ///////task 4
 
-            /*
-            var flag = false;
-            while (!flag)
+            var existiedBundle = false;
+            if(designAutomation.RegisterAppBundle("DeleteWallsApp11", "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018"))
             {
-                flag = forge.HasFinishedPublishingAsync(myProject.ProjectId, myFolder.FolderId, myFile.ContentId);
-            }*/
-            try
-            {
-                bool needPublish = forge.HasFinishedPublishingAsync(myProject.ProjectId, myFolder.FolderId, myFile.ContentId);
-                /*      if (needPublish)
-                      {
-                            var result = forge.DoPublishLatestAsync(myProject.ProjectId, myFolder.FolderId, myFile.ContentId);
-                              //if committed
-                            if(result== "committed")
-                            {
-                              var flag = false;
-                              while (!flag)
-                              {
-                                  flag=forge.HasFinishedPublishingAsync(myProject.ProjectId, myFolder.FolderId, myFile.ContentId);
-                              }
-                            }
-                       }*/
+                if (existiedBundle = designAutomation.UploadAppBundle("C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip"))
+                {
+                    Console.WriteLine("uploaded");
+                }
+                else { Console.WriteLine("failed"); }
+
+                if (designAutomation.CreateAliasForAppBundle("test1"))
+                {
+                    Console.WriteLine("alias created");
+                }
+                else { Console.WriteLine("alias create failed"); }
             }
-            catch(Exception e)
+
+            //*update part*//
+            if (existiedBundle)
             {
-                var error = e.ToString();
-                Console.WriteLine(error);
+                if(designAutomation.UpdateExistingAppBundle("DeleteWallsApp11", "Autodesk.Revit+2018", "Delete Walls AppBundle based on Revit 2018 Update", "C:\\Users\\SteerC\\Music\\delete\\DeleteWallsApp.zip", "test1"))
+                {
+                    Console.WriteLine("updated");
+                }
+                else
+                {
+                    Console.WriteLine("failed updating");
+                }
+
             }
+
+            //  UpdateExistingAppBundle("DeleteWallsApp5")
+            //////end task 4
 
         }
     }
-}
+    }

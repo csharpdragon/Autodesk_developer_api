@@ -3,10 +3,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
-using AdvLibrary.ForgeApi.Model;
-using Autodesk.Forge;
-using Autodesk.Forge.Model;
 using Autodesk.Forge.Client;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -142,17 +138,18 @@ namespace AdvLibrary.ForgeApi
 
         #region ForTask4
 
-        private string Policy;
-        private string x_amz_signature;
-        private string x_amz_credential;
-        private string x_amz_algorithm;
-        private string x_amz_date;
-        private string x_amz_security_token;
-        private string AppId;
-        private string AppEngine;
-        private string EndPointUrl;
-        private string version;
-        private string AppKey;
+        public string Policy;
+        public string x_amz_signature;
+        public string x_amz_credential;
+        public string x_amz_algorithm;
+        public string x_amz_date;
+        public string x_amz_security_token;
+        public string AppId;
+        public string AppEngine;
+        public string EndPointUrl;
+        public string version;
+        public string AppKey;
+
         public bool RegisterAppBundle(string appId, string appEngine,string appDescription)
         {
 
@@ -284,11 +281,9 @@ namespace AdvLibrary.ForgeApi
             client.DefaultRequestHeaders
                 .Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-            
-            AppId = "DeleteWallsApp5";
-            
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"https://developer.api.autodesk.com/da/us-east/v3/appbundles/{AppId}/aliases");
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");            
+  //          AppId = "DeleteWallsApp5";
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{AppId}/aliases");
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
@@ -300,6 +295,7 @@ namespace AdvLibrary.ForgeApi
                 }
                 else
                 {
+                    Console.WriteLine(jsonResponse);
                     return false;
                 }
             }
@@ -310,11 +306,136 @@ namespace AdvLibrary.ForgeApi
 
             return true;
         }
-        
-        public bool UpdateExistingAppBundle()
+
+
+        #region Task 4 Step 5 - Update an existing AppBundle
+
+        public bool getParametersForUpdating(string appId, string engineName, string updatedescription)
         {
+            object sedingData = new
+            {
+                engine = engineName,
+                description = updatedescription
+            };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri($"https://developer.api.autodesk.com/");
+            
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            var tempId = appId;
+            tempId = "DeleteWallsApp5";
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{tempId}/aliases");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if (result1.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    if (json["errors"] != null)
+                    {
+                        throw new Exception(json["errors"][0]["detail"].ToString());
+                    }
+                    appId= json["id"].ToString();
+                    version = json["version"].ToString();
+                    AppEngine = json["engine"].ToString();
+                    EndPointUrl = json["uploadParameters"]["endpointURL"].ToString();
+                    AppKey= json["uploadParameters"]["formData"]["key"].ToString();
+                    Policy = json["uploadParameters"]["formData"]["policy"].ToString();
+                    x_amz_signature = json["uploadParameters"]["formData"]["x-amz-signature"].ToString();
+                    x_amz_credential = json["uploadParameters"]["formData"]["x-amz-credential"].ToString();
+                    x_amz_algorithm = json["uploadParameters"]["formData"]["x-amz-algorithm"].ToString();
+                    x_amz_date = json["uploadParameters"]["formData"]["x-amz-date"].ToString();
+                    x_amz_security_token = json["uploadParameters"]["formData"]["x-amz-security-token"].ToString();
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
             return false;
         }
+
+        /// <summary>
+        /// Assign an existing alias to the updated AppBundle
+        /// </summary>
+        public bool ReAssignAlias(string appId,string aliasName)
+        {
+            var url = $"https://developer.api.autodesk.com/da/us-east/v3/appbundles/{appId}/aliases/{aliasName}";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "PATCH";
+
+            httpRequest.Headers["Authorization"] = "Bearer " + token;
+            httpRequest.ContentType = "application/json";
+
+            var data = new { nickname = version };
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
+            }
+            try
+            {
+                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    var result = streamReader.ReadToEnd();
+                }
+                if (httpResponse.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("You have data for your nickname. Cann't patch. You have to delete first");
+                return false;
+            }
+            return false;
+        }
+        public bool UpdateExistingAppBundle(string appId,string engineName,string description, string updateFilepath)
+        {
+            if (getParametersForUpdating(appId, engineName, description))
+            {
+                if (UploadAppBundle(updateFilepath))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool UpdateExistingAppBundle(string appId, string engineName, string description, string updateFilepath,string updateAlias)
+        {
+            if (getParametersForUpdating(appId, engineName, description))
+            {
+                if (UploadAppBundle(updateFilepath))
+                {
+                    try { ReAssignAlias(appId, updateAlias); } catch(Exception e) { Console.WriteLine(e.ToString()); }
+                    return true;
+                }
+            }
+            return false;
+        }
+        #endregion
         #endregion
         #endregion
     }
