@@ -268,6 +268,53 @@ namespace AdvLibrary.ForgeApi
             }
             return false;
         }
+        
+        public bool CreateAliasForAppBundle(string aliasname)
+        {
+            object sedingData = new
+            {
+                version=1,
+                id= aliasname
+            };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            
+            AppId = "DeleteWallsApp5";
+            
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"https://developer.api.autodesk.com/da/us-east/v3/appbundles/{AppId}/aliases");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if (result1.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            return true;
+        }
+        
+        public bool UpdateExistingAppBundle()
+        {
+            return false;
+        }
         #endregion
         #endregion
     }
