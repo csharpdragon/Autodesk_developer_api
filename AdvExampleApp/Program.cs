@@ -28,9 +28,10 @@ namespace AdvExampleApp
             ///////task 4
 
             var existiedBundle = false;
-            var appId = "CountSampleApp3";
+            var appId = "CountSampleApp5";
             var alias = "test1";
-            if (designAutomation.RegisterAppBundle(appId, "Autodesk.Revit+2018", "Count AppBundle based on Revit 2023"))
+            /*
+            if (designAutomation.RegisterAppBundle(appId, "Autodesk.Revit+2022", "Count AppBundle based on Revit 2023"))
             {
                 if (designAutomation.UploadAppBundle("D:\\CountSampeApp.7z"))
                 {
@@ -45,7 +46,7 @@ namespace AdvExampleApp
                 else { Console.WriteLine("alias create failed"); }
             }
 
-            //*update part*//
+            //update part//
             if (existiedBundle)
             {
                 if(designAutomation.UpdateExistingAppBundle(appId, "Autodesk.Revit+2022", "Count AppBundle based on Revit 2022 Update", "D:\\CountSampeApp.7z", alias))
@@ -58,18 +59,42 @@ namespace AdvExampleApp
                 }
 
             }
-
+            */
             //  UpdateExistingAppBundle("DeleteWallsApp5")
             //////end task 4
 
 
             /////for task 5
             var activityAlias = "test";
-            if (designAutomation.CreateNewActivity(nickname, appId, alias, "countActivity", "D:\\DeleteWalls.rvt"))
+            var activityId = "countActivity10";
+            var activitycreated = false;
+            if (designAutomation.CreateNewActivity(nickname, appId, alias, activityId, "Autodesk.Revit+2022"))
             {
-
+                ////create alias for activity
+                if (activitycreated=designAutomation.CreateActivtyAlias(activityId, activityAlias))
+                {
+                    Console.WriteLine("activity and activity alias created");
+                }
+                else
+                {
+                    Console.WriteLine("activity alias failed to create");
+                }
             }
 
+            if (activitycreated)
+            {
+                if(designAutomation.UpdateExistingActivity(nickname,appId,alias,activityId, "Autodesk.Revit+2022"))
+                {
+                    if (designAutomation.AssignAliasToUpdatedActivity(activityId,activityAlias))
+                    {
+                        Console.WriteLine("activity alias updated");
+                    }
+                    else
+                    {
+                        Console.WriteLine("uptivity alias updating failed");
+                    }
+                }
+            }
             ////end for task 5
         }
     }

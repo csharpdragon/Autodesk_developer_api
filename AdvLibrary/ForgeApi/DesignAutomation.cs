@@ -441,7 +441,7 @@ namespace AdvLibrary.ForgeApi
         #endregion
 
         #region Task 5
-        public bool CreateNewActivity(string nickname,string appid,string alias,string activityId,string rvtfilePath)
+        public bool CreateNewActivity(string nickname,string appid,string alias,string activityId,string enginName)
         {
             object sedingData = new
             {
@@ -456,7 +456,7 @@ namespace AdvLibrary.ForgeApi
                         verb = "get",
                         description = "Input Revit model",
                         required = true,
-                        localName = rvtfilePath,
+                        localName = "input.rvt",
                     },
                     result = new
                     {
@@ -468,7 +468,7 @@ namespace AdvLibrary.ForgeApi
                         localName = "result.txt"
                     }
                 },
-                engine=AppEngine,
+                engine= enginName,
                 appbundles =new object[] {$"{nickname}.{appid}+{alias}"}
             };
 
@@ -487,15 +487,24 @@ namespace AdvLibrary.ForgeApi
             {
                 HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if(result1.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                    return false;
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
 
-            JObject json = JObject.Parse(jsonResponse);
             
-            return true;
+            
+            return false;
 
         }
 
@@ -516,12 +525,183 @@ namespace AdvLibrary.ForgeApi
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/activities");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/activities/{activityid}/aliases");
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
                 HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if(result1.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+//            JObject json = JObject.Parse(jsonResponse);
+
+            return false;
+        }
+
+
+
+        public string existingActivityVersion;
+        public bool UpdateExistingActivity(string nickname,string appid, string alias, string activityid, string enginName)
+        {
+            object sedingData = new
+            {
+                commandLine = new object[] { $"$(engine.path)\\\\revitcoreconsole.exe /i \"$(args[rvtFile].path)\" /al \"$(appbundles[{appid}].path)\"" },
+                parameters = new
+                {
+                    rvtFile = new
+                    {
+                        zip = false,
+                        ondemand = false,
+                        verb = "get",
+                        description = "Input Revit model",
+                        required = true,
+                        localName = "input.rvt",
+                    },
+                    result = new
+                    {
+                        zip = false,
+                        ondemand = false,
+                        verb = "put",
+                        description = "Result",
+                        required = "true",
+                        localName = "result.txt"
+                    }
+                },
+                engine = enginName,
+                appbundles = new object[] { $"{nickname}.{appid}+{alias}" },
+                description = $"{activityid} file Updated."
+
+            };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/activities/{activityid}/versions");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if(result1.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    existingActivityVersion = json["version"].ToString();
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            
+            return false;
+        }
+
+        public bool AssignAliasToUpdatedActivity(string activityId,string activityAlias)
+        {
+            var url = $"https://developer.api.autodesk.com/da/us-east/v3/activities/{activityId}/aliases/{activityAlias}";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "PATCH";
+
+            httpRequest.Headers["Authorization"] = "Bearer " + token;
+            httpRequest.ContentType = "application/json";
+
+            var data = new { version = existingActivityVersion };
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
+            }
+            try
+            {
+                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    var result = streamReader.ReadToEnd();
+                }
+                if (httpResponse.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                if (httpResponse.StatusCode == HttpStatusCode.Conflict)
+                {
+                    /// in case of conflict, so change the name
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("You have data for your nickname. Cann't patch. You have to delete first");
+                return false;
+            }
+            return false;
+        }
+        #endregion
+
+        #region Task 6
+
+        public string BucketKey;
+//        public string 
+        public bool CreateBucket(string bucketkey)
+        {
+            object sedingData = new
+            {
+                bucketKey = bucketkey,
+                access ="full",
+                policyKey = "transient"
+            };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"https://developer.api.autodesk.com/oss/v2/buckets");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if(result1.StatusCode == HttpStatusCode.OK)
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                    return false;
+                }
             }
             catch (Exception e)
             {
@@ -530,9 +710,11 @@ namespace AdvLibrary.ForgeApi
 
             JObject json = JObject.Parse(jsonResponse);
 
-            return true;
+            return false;
+
         }
         #endregion
+
         #endregion
     }
 }
