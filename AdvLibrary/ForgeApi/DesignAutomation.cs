@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using RestSharp;
 using System.Net;
+
 namespace AdvLibrary.ForgeApi
 {
     public class DesignAutomation
@@ -440,7 +441,7 @@ namespace AdvLibrary.ForgeApi
         #endregion
         #endregion
 
-        #region Task 5
+        #region For Task 5
         public bool CreateNewActivity(string nickname,string appid,string alias,string activityId,string enginName)
         {
             object sedingData = new
@@ -665,7 +666,7 @@ namespace AdvLibrary.ForgeApi
         }
         #endregion
 
-        #region Task 6
+        #region For Task 6
 
         public string BucketKey;
 //        public string 
@@ -713,8 +714,405 @@ namespace AdvLibrary.ForgeApi
             return false;
 
         }
+
+        public string uploadkey;
+        public string uploadExpiration;
+        public string urlExpiration;
+        public List<string> uploadUrls;
+
+        /// <summary>
+        /// for single file
+        /// </summary>
+        /// <param name="bucketname"></param>
+        /// <param name="objectkey"></param>
+        /// <returns>signed url string</returns>
+        public string GenerateSignedS3Url(string bucketname,string objectkey,out string uploadUrlResponseKey)
+        {
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            string jsonResponse = string.Empty;
+            HttpResponseHeaders headers = null;
+
+            try
+            {
+                HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/oss/v2/buckets/{bucketname}/objects/{objectkey}/signeds3upload").GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                headers = result1.Headers;
+                if(result1.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    uploadkey = json["uploadKey"].ToString();
+                    uploadExpiration = json["uploadExpiration"].ToString();
+                    urlExpiration = json["urlExpiration"].ToString();
+                    uploadUrls = new List<string>();
+                    JArray dataArray = (JArray)json["urls"];
+                    for(var i=0;i<dataArray.Count;i++)
+                    {
+                        uploadUrls.Add(dataArray[i].ToString());
+                    }
+                    uploadUrlResponseKey = uploadkey;
+                    return uploadUrls[0];
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            uploadUrlResponseKey = "";
+            return "";
+        }
+        /*
+        public void GenerateSignedS3Urls(string bucketName)
+        {
+            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketName}/objects/random_file.bin/signeds3upload";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "POST";
+
+            httpRequest.Headers["Authorization"] = "Bearer eYeL5gYxAT2j3u9TEerxoJoToNbi";
+            httpRequest.ContentType = "application/json";
+            httpRequest.Headers["x-ads-meta-Content-Type"] = "application/octet-stream";
+
+            var data = @"{
+    ""uploadKey"": ""{UPLOAD_KEY_PROVIDED_FROM_GET_UPLOAD_URLS_RESPONSE}""
+  }";
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(data);
+            }
+
+            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                var result = streamReader.ReadToEnd();
+            }
+
+            Console.WriteLine(httpResponse.StatusCode);
+
+        }*/
+
+        public bool UploadFileToSignedUrl(string signedurl,string filePath)
+        {
+            var url = signedurl;
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "PUT";
+
+            httpRequest.ContentType = "text/plain";
+
+            Stream rs = httpRequest.GetRequestStream();
+            FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            byte[] buffer = new byte[4096];
+            int bytesRead = 0;
+            while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) != 0)
+            {
+                rs.Write(buffer, 0, bytesRead);
+            }
+            fileStream.Close();
+            rs.Close();
+            /*
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                FileStream fileStream = File.OpenRead(filePath);
+                byte[] buffer = new byte[4096];
+                int bytesRead = 0;
+                while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) != 0)
+                {
+                    streamWriter.Write(buffer, 0, bytesRead);
+                }
+                fileStream.Close();
+
+
+                var streamContent = new StreamContent(fileStream);
+                var fileContent = new ByteArrayContent(streamContent.ReadAsByteArrayAsync().Result);
+                streamWriter.Write(fileContent);
+            }*/
+
+            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                var result = streamReader.ReadToEnd();
+            }
+
+            return true;
+        }
+
+        public string CompleteUploading(string bucketKey,string objectKey,string uploadUrlResponseKey)
+        {
+            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "POST";
+
+            httpRequest.Headers["Authorization"] = "Bearer "+token;
+            httpRequest.ContentType = "application/json";
+
+            var data = new { uploadKey = uploadUrlResponseKey  };
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
+            }
+
+            
+            try {
+                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if(httpResponse.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json;
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = streamReader.ReadToEnd();
+                        json = JObject.Parse(result);
+                    }
+                    var objectId = json["objectId"].ToString();
+                    return objectId;
+                }
+                
+            }
+            catch (Exception e)
+            {
+
+            }
+
+            return "";
+        }
+
+
+        public string GetDownloadUrl(string bucketkey, string objectkey)
+        {
+            object sedingData = new {};
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"oss/v2/buckets/{bucketkey}/objects/{objectkey}/signed");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if(result1.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    return json["signedUrl"].ToString();
+                }
+                else
+                {
+                    return "";
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return "";
+        }
+
+        public string GetUploadUrl(string bucketkey, string objectkey)
+        {
+            object sedingData = new { };
+
+            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"oss/v2/buckets/{bucketkey}/objects/{objectkey}/signed?access=readwrite");
+            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if (result1.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    return json["signedUrl"].ToString();
+                }
+                else
+                {
+                    return "";
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return "";
+        }
         #endregion
 
+        
+        #region For Task 7
+
+        //return workItemId
+        public string CreateWorkItem(string nickname, string activityid, string activityAlias,string downloadUrl, string uploadUrl, string pathInzip, out string status)
+        {
+            var url = "https://developer.api.autodesk.com/da/us-east/v3/workitems";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "POST";
+
+            httpRequest.Headers["Authorization"] = "Bearer " + token;
+            httpRequest.ContentType = "application/json";
+
+            var data = new {
+                activityId =  $"{nickname}.{activityid}+{activityAlias}",
+                arguments = new
+                {
+                    rvtFile = new
+                    {
+                        url= downloadUrl,
+                        pathInZip= pathInzip
+                    },
+                    result = new
+                    {
+                        verb = "put",
+                        url = uploadUrl
+                    }
+                }
+            };
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
+            }
+
+
+            try
+            {
+                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if (httpResponse.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json;
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = streamReader.ReadToEnd();
+                        json = JObject.Parse(result);
+                    }
+                    var id = json["id"].ToString();
+                    status=json["status"].ToString();
+                    return id;
+                }
+
+            }
+            catch (Exception e)
+            {
+
+            }
+            status = "";
+            return "";
+        }
+
+        public string CreateWorkItem(string nickname, string activityid, string activityAlias, string downloadUrl, string uploadUrl, out string status)
+        {
+            var url = "https://developer.api.autodesk.com/da/us-east/v3/workitems";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "POST";
+
+            httpRequest.Headers["Authorization"] = "Bearer " + token;
+            httpRequest.ContentType = "application/json";
+
+            var data = new
+            {
+                activityId = $"{nickname}.{activityid}+{activityAlias}",
+                arguments = new
+                {
+                    rvtFile = new
+                    {
+                        url = downloadUrl,
+                    },
+                    result = new
+                    {
+                        verb = "put",
+                        url = uploadUrl
+                    }
+                }
+            };
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
+            }
+
+
+            try
+            {
+                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if (httpResponse.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json;
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = streamReader.ReadToEnd();
+                        json = JObject.Parse(result);
+                    }
+                    var id = json["id"].ToString();
+                    status = json["status"].ToString();
+                    return id;
+                }
+
+            }
+            catch (Exception e)
+            {
+
+            }
+            status = "";
+            return "";
+        }
+
+        public string CheckStatusOfItem(string workItemId)
+        {
+            var url = $"https://developer.api.autodesk.com/da/us-east/v3/workitems/{workItemId}";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "GET";
+
+            httpRequest.Headers["Authorization"] = "Bearer " + token;
+            httpRequest.ContentType = "application/json";
+/*
+            var data = new {};
+
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
+            }*/
+            try
+            {
+                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if (httpResponse.StatusCode == HttpStatusCode.OK)
+                {
+                    JObject json;
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = streamReader.ReadToEnd();
+                        json = JObject.Parse(result);
+                    }
+                    var status = json["status"].ToString();
+                    return status;
+                }
+
+            }
+            catch (Exception e)
+            {
+
+            }
+            return "";
+        }
+        #endregion*/
         #endregion
     }
 }

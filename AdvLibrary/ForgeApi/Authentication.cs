@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Diagnostics;
 
 namespace AdvLibrary.ForgeApi
@@ -269,6 +270,7 @@ namespace AdvLibrary.ForgeApi
             return this.designToken;
         }
 
+        
         #endregion
     }
 }
