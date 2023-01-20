@@ -476,5 +476,72 @@ namespace AdvLibrary.ForgeApi
         }
 
         #endregion
+
+
+        public string FindStorageLocation(string projectId, string itemId)
+        {
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            string jsonResponse = string.Empty;
+            HttpResponseHeaders headers = null;
+            bool passed = false;
+            
+            try
+            {
+                HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}").GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+
+                if(result1.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    JArray includedArray = (JArray)json["included"];
+                    return includedArray[0]["relationships"]["storage"]["data"]["id"].ToString().Split('/')[1];
+                }
+                else
+                {
+                    return "";
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return "";
+            
+        }
+
+        public string GetS3Url(string itemurl)
+        {
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            string jsonResponse = string.Empty;
+            HttpResponseHeaders headers = null;
+            bool passed = false;
+
+            try
+            {
+                HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/{itemurl}/signeds3download").GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+
+                if (result1.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    JObject json = JObject.Parse(jsonResponse);
+                    
+                    return json["url"].ToString();
+                }
+                else
+                {
+                    return "";
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return "";
+        }
     }
 }

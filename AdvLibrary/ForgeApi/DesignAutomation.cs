@@ -466,7 +466,7 @@ namespace AdvLibrary.ForgeApi
                         verb = "put",
                         description ="Result",
                         required ="true",
-                        localName = "result.txt"
+                        localName = "result.rvt"
                     }
                 },
                 engine= enginName,
@@ -578,7 +578,7 @@ namespace AdvLibrary.ForgeApi
                         verb = "put",
                         description = "Result",
                         required = "true",
-                        localName = "result.txt"
+                        localName = "result.rvt"
                     }
                 },
                 engine = enginName,
@@ -1102,6 +1102,10 @@ namespace AdvLibrary.ForgeApi
                         json = JObject.Parse(result);
                     }
                     var status = json["status"].ToString();
+                    if(status == "success")
+                    {
+                        var a = 1;
+                    }
                     return status;
                 }
 
