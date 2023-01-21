@@ -466,7 +466,7 @@ namespace AdvLibrary.ForgeApi
                         verb = "put",
                         description ="Result",
                         required ="true",
-                        localName = "result.rvt"
+                        localName = "result.txt"
                     }
                 },
                 engine= enginName,
@@ -578,7 +578,7 @@ namespace AdvLibrary.ForgeApi
                         verb = "put",
                         description = "Result",
                         required = "true",
-                        localName = "result.rvt"
+                        localName = "result.txt"
                     }
                 },
                 engine = enginName,
@@ -1115,6 +1115,27 @@ namespace AdvLibrary.ForgeApi
 
             }
             return "";
+        }
+
+
+        public string GetResultString(string buketkey, string objectkey)
+        {
+            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{buketkey}/objects/{objectkey}";
+
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+
+            httpRequest.Headers["Authorization"] = $"Bearer "+token;
+            httpRequest.ContentType = "application/json";
+            httpRequest.Headers["cache-control"] = "no-cache";
+
+            var resultstring = "";
+            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                var result = streamReader.ReadToEnd();
+                resultstring = result;
+            }
+            return resultstring;
         }
         #endregion*/
         #endregion
