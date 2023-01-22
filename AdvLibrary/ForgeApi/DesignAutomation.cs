@@ -135,6 +135,66 @@ namespace AdvLibrary.ForgeApi
             }
             return false;
         }
+        public void DeleteNickName()
+        {
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri($"https://developer.api.autodesk.com/");
+
+            client.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, $"da/us-east/v3/forgeapps/me");
+            HttpResponseMessage result1 = null;
+            try
+            {
+                result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if (result1.StatusCode == HttpStatusCode.OK)
+                {
+                    Console.WriteLine("Your nickname and previous data deleted successfully");
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+        }
+        public string GetNickName()
+        {
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri($"https://developer.api.autodesk.com/");
+
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"da/us-east/v3/forgeapps/me");
+            HttpResponseMessage result1 = null;
+            try
+            {
+                result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if (result1.StatusCode == HttpStatusCode.OK)
+                {
+                    return jsonResponse.Replace("\"", "");
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            return null;
+        }
         #endregion
 
         #region ForTask4
@@ -151,7 +211,46 @@ namespace AdvLibrary.ForgeApi
         public string version;
         public string AppKey;
         public string AppaliasName;
-        public bool RegisterAppBundle(string appId, string appEngine,string appDescription)
+        public List<string> GetAllBundles(string nickname)
+        {
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri($"https://developer.api.autodesk.com/");
+
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/da/us-east/v3/appbundles");
+            HttpResponseMessage result1 = null;
+            try
+            {
+                result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+                if (result1.StatusCode == HttpStatusCode.OK)
+                {
+                    List<string> resultArray = new List<string>();
+                    JObject json = JObject.Parse(jsonResponse);
+                    JArray dataArray = (JArray)json["data"];
+                    JArray includedArray = (JArray)dataArray;
+                    for(var i = 0; i < includedArray.Count; i++)
+                    {
+                        if (includedArray[i].ToString().Contains($"{nickname}.") && !includedArray[i].ToString().Contains("$LATEST"))
+                            resultArray.Add(includedArray[i].ToString());
+                    }
+                    return resultArray;
+                }
+                else
+                {
+                    Console.WriteLine(jsonResponse);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            return null;
+        }
+
+        public bool RegisterAppBundle(string appId,string appDescription)
         {
 
             var url = "https://developer.api.autodesk.com/da/us-east/v3/appbundles";
@@ -165,7 +264,7 @@ namespace AdvLibrary.ForgeApi
 
             var data = new { 
                 id = appId,
-                engine = appEngine,
+                engine = "Autodesk.Revit+2022",
                 description = appDescription
             };
 
@@ -205,7 +304,7 @@ namespace AdvLibrary.ForgeApi
             catch(Exception e)
             {
                 Console.WriteLine(e.ToString());
-                Console.WriteLine("You have that name app. Can't create again");
+                Console.WriteLine("You have that name app. Cann't create again");
             }
             return false;
 
@@ -331,14 +430,14 @@ namespace AdvLibrary.ForgeApi
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
             var tempId = appId;
-//            tempId = "DeleteWallsApp5";
+
 
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"da/us-east/v3/appbundles/{tempId}/versions");
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
-            
+            HttpResponseMessage result1=null;
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                result1 = client.SendAsync(request).GetAwaiter().GetResult();
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if (result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -368,6 +467,10 @@ namespace AdvLibrary.ForgeApi
             }
             catch (Exception e)
             {
+               if(result1.StatusCode == HttpStatusCode.Conflict)
+                {
+                    
+                }
                 Console.WriteLine(e);
             }
 
@@ -414,9 +517,9 @@ namespace AdvLibrary.ForgeApi
             }
             return false;
         }
-        public bool UpdateExistingAppBundle(string appId,string engineName,string description, string updateFilepath)
+        public bool UpdateExistingAppBundle(string appId,string description, string updateFilepath)
         {
-            if (getParametersForUpdating(appId, engineName, description))
+            if (getParametersForUpdating(appId, "Autodesk.Revit+2022", description))
             {
                 if (UploadAppBundle(updateFilepath))
                 {
@@ -426,9 +529,9 @@ namespace AdvLibrary.ForgeApi
             return false;
         }
 
-        public bool UpdateExistingAppBundle(string appId, string engineName, string description, string updateFilepath,string updateAlias)
+        public bool UpdateExistingAppBundle(string appId, string description, string updateFilepath,string updateAlias)
         {
-            if (getParametersForUpdating(appId, engineName, description))
+            if (getParametersForUpdating(appId, "Autodesk.Revit+2022", description))
             {
                 if (UploadAppBundle(updateFilepath))
                 {
@@ -442,7 +545,39 @@ namespace AdvLibrary.ForgeApi
         #endregion
 
         #region For Task 5
-        public bool CreateNewActivity(string nickname,string appid,string alias,string activityId,string enginName)
+        public List<string> GetActivitys(string nickname)
+        {
+            string jsonResponse = string.Empty;
+            var client = new HttpClient();
+            client.BaseAddress = new Uri($"https://developer.api.autodesk.com/");
+
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/da/us-east/v3/activities");
+            
+            try
+            {
+                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                jsonResponse = result1.Content.ReadAsStringAsync().Result;
+
+                List<string> resultArray = new List<string>();
+                JObject json = JObject.Parse(jsonResponse);
+                JArray dataArray = (JArray)json["data"];
+                JArray includedArray = (JArray)dataArray;
+                for (var i = 0; i < includedArray.Count; i++)
+                {
+                    if (includedArray[i].ToString().Contains($"{nickname}.") && !includedArray[i].ToString().Contains("$LATEST"))
+                        resultArray.Add(includedArray[i].ToString());
+                }
+                return resultArray;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            return null;
+        }
+        public bool CreateNewActivity(string nickname,string appid,string alias,string activityId)
         {
             object sedingData = new
             {
@@ -469,7 +604,7 @@ namespace AdvLibrary.ForgeApi
                         localName = "result.txt"
                     }
                 },
-                engine= enginName,
+                engine = "Autodesk.Revit+2022",
                 appbundles =new object[] {$"{nickname}.{appid}+{alias}"}
             };
 
@@ -555,7 +690,7 @@ namespace AdvLibrary.ForgeApi
 
 
         public string existingActivityVersion;
-        public bool UpdateExistingActivity(string nickname,string appid, string alias, string activityid, string enginName)
+        public bool UpdateExistingActivity(string nickname,string appid, string alias, string activityid)
         {
             object sedingData = new
             {
@@ -581,7 +716,7 @@ namespace AdvLibrary.ForgeApi
                         localName = "result.txt"
                     }
                 },
-                engine = enginName,
+                engine = "Autodesk.Revit+2022",
                 appbundles = new object[] { $"{nickname}.{appid}+{alias}" },
                 description = $"{activityid} file Updated."
 
