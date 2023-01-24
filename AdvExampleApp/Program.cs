@@ -35,8 +35,8 @@ namespace AdvExampleApp
         static void Main(string[] args)
         {
 
-            string client_id = "z9AnxOhryxcTSTzyA2oRRJCaiYGIMr6g";
-            string client_secret = "Mc7fd0f574c8b4e2";
+            string client_id = "xxxxxx";
+            string client_secret = "xxxxx";
             var authenticate = new Authentication(client_id, client_secret, "V5MzzOzwgIPMbC3NDzlkyKSPsUYo48I25cUIMzkcPb");
 
             /////generating s3 url part for addin
