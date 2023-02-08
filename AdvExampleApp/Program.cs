@@ -35,36 +35,11 @@ namespace AdvExampleApp
         static void Main(string[] args)
         {
 
-            string client_id = "xxxxxx";
-            string client_secret = "xxxxx";
+            string client_id = "z9AnxOhryxcTSTzyA2oRRJCaiYGIMr6g";
+            string client_secret = "Mc7fd0f574c8b4e2";
             var authenticate = new Authentication(client_id, client_secret, "V5MzzOzwgIPMbC3NDzlkyKSPsUYo48I25cUIMzkcPb");
 
-            /////generating s3 url part for addin
-            ///
             
-            DataManagement forge = new DataManagement(authenticate.Token);
-
-            var hubs = new List<AutoHub>();
-            var projects = new List<AutoProject>();
-            var topFolders = new List<AutoFolder>();
-            var files = new List<AutoFile>();
-            //Here I will get a list of hubs for the credentials
-            hubs = new List<AutoHub>(forge.GetHubsAsync().Result);
-
-            AutoHub myHub = hubs.Where(x => x.HubName == "ADV").First();
-
-            projects = new List<AutoProject>(forge.GetProjectsAsync(myHub.HubId).Result);
-
-            AutoProject myProject = projects.Where(x => x.ProjectName == "Test Project").First();
-            files = new List<AutoFile>(forge.GetFilesAsync(myProject.ProjectId, "urn:adsk.wipprod:fs.folder:co.rhsuy37DRNKKwuuAn6buFQ").Result);
-            AutoFile myFile = files.Where(x => x.Name == "GYT-ZIV-ZZ-ZZ-M3-S-0001.rvt").First();
-
-            var link = forge.FindStorageLocation(myProject.ProjectId, myFile.ContentId);
-
-            var s3url = forge.GetS3Url(link);
-
-            /////// end generating s3 url
-            ///
 
             
 
@@ -115,7 +90,7 @@ namespace AdvExampleApp
 
             if (needRegisterAppBundle)
             {
-                Console.WriteLine("You have no registered APP Bundles. You have to create");
+                Console.WriteLine("Registering App Bundle...");
                 Console.Write("Enter your app bundle name:");
                 appId = Console.ReadLine();
 
@@ -127,7 +102,7 @@ namespace AdvExampleApp
                 
                 if (designAutomation.RegisterAppBundle(appId, description))
                 {
-                    if (designAutomation.UploadAppBundle("D:\\ttttt\\CountIt.zip"))
+                    if (designAutomation.UploadAppBundle("D:\\ttttt\\AdvAutoCount.zip"))
                     {
                         Console.WriteLine("uploaded");
                     }
@@ -198,9 +173,17 @@ namespace AdvExampleApp
             bool needActivityCreate = false;
             if(activities==null || activities.Count == 0)
                 needActivityCreate = true;
+            else
+            {
+                Console.Write("Do you want to register new Activity?(if no, you have to use registered activity or update already existed) [y/n]:");
+                var enteredString = Console.ReadLine();
+                if (enteredString.ToLower().Contains("y"))
+                    needActivityCreate = true;
+                else needActivityCreate = false;
+            }
             if (needActivityCreate)
             {
-                Console.WriteLine("You don't have any registered activities. You have to register one");
+                Console.WriteLine("Registering Activity...");
                 Console.WriteLine("Activity Name:");
                 activityId = Console.ReadLine();
                 Console.WriteLine("Activity Alias:");
@@ -284,6 +267,33 @@ namespace AdvExampleApp
 
             signedUrlForUpload = designAutomation.GenerateSignedS3Url(bucketname, objectKey, out uploadUrlResponseKey);
 
+            /////generating s3 url part for addin
+            ///
+
+            DataManagement forge = new DataManagement(authenticate.Token);
+
+            var hubs = new List<AutoHub>();
+            var projects = new List<AutoProject>();
+            var topFolders = new List<AutoFolder>();
+            var files = new List<AutoFile>();
+            //Here I will get a list of hubs for the credentials
+            hubs = new List<AutoHub>(forge.GetHubsAsync().Result);
+
+            AutoHub myHub = hubs.Where(x => x.HubName == "ADV").First();
+
+            projects = new List<AutoProject>(forge.GetProjectsAsync(myHub.HubId).Result);
+
+            AutoProject myProject = projects.Where(x => x.ProjectName == "Test Project").First();
+            files = new List<AutoFile>(forge.GetFilesAsync(myProject.ProjectId, "urn:adsk.wipprod:fs.folder:co.TyuUCyO5TyyaRVYASgm-qQ").Result);
+            AutoFile myFile = files.Where(x => x.Name == "SHIBOLET_IT.rvt").First();
+
+            var link = forge.FindStorageLocation(myProject.ProjectId, myFile.ContentId);
+
+            var s3url = forge.GetS3Url(link);
+
+            /////// end generating s3 url
+            ///
+
             var downloadUrl = s3url;
             var uploadUrl = "";
 
@@ -302,7 +312,7 @@ namespace AdvExampleApp
             if (!string.IsNullOrEmpty(workId))
             {
                 Console.WriteLine("activity started. running...");
-                while (itemstatus != "success")
+                while (itemstatus != "success" && !itemstatus.Contains("fail"))
                 {
                     itemstatus = designAutomation.CheckStatusOfItem(workId);
                 }

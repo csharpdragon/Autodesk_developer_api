@@ -9,6 +9,9 @@ using System.Net.Http.Headers;
 using RestSharp;
 using System.Net;
 
+
+using System.Threading.Tasks;
+
 namespace AdvLibrary.ForgeApi
 {
     public class DesignAutomation
@@ -109,10 +112,17 @@ namespace AdvLibrary.ForgeApi
             {
                 streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
             }
+            HttpWebResponse httpResponse;
+            do
+            {
+                httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if (checkLimit(httpResponse.Headers).Result)
+                    break;
+
+            } while (true);
+
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
-                
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                 {
                     var result = streamReader.ReadToEnd();
@@ -223,7 +233,14 @@ namespace AdvLibrary.ForgeApi
             HttpResponseMessage result1 = null;
             try
             {
-                result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if (result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -274,7 +291,15 @@ namespace AdvLibrary.ForgeApi
             }
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
+                
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                 {
                     jsonResponse = streamReader.ReadToEnd();
@@ -346,7 +371,15 @@ namespace AdvLibrary.ForgeApi
 
             try
             {
-                HttpResponseMessage result1 = client.PostAsync("https://dasprod-store.s3.amazonaws.com", content).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.PostAsync("https://dasprod-store.s3.amazonaws.com", content).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
+               
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if(result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -387,7 +420,15 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if (result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -437,7 +478,13 @@ namespace AdvLibrary.ForgeApi
             HttpResponseMessage result1=null;
             try
             {
-                result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if (result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -498,7 +545,14 @@ namespace AdvLibrary.ForgeApi
             }
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
 
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                 {
@@ -557,7 +611,14 @@ namespace AdvLibrary.ForgeApi
             
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
 
                 List<string> resultArray = new List<string>();
@@ -621,7 +682,14 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if(result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -665,7 +733,14 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if(result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -735,7 +810,14 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if(result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -776,7 +858,14 @@ namespace AdvLibrary.ForgeApi
             }
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
 
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                 {
@@ -827,7 +916,14 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if(result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -871,7 +967,14 @@ namespace AdvLibrary.ForgeApi
 
             try
             {
-                HttpResponseMessage result1 = client.GetAsync($"https://developer.api.autodesk.com/oss/v2/buckets/{bucketname}/objects/{objectkey}/signeds3upload").GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.GetAsync($"https://developer.api.autodesk.com/oss/v2/buckets/{bucketname}/objects/{objectkey}/signeds3upload").GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 headers = result1.Headers;
                 if(result1.StatusCode == HttpStatusCode.OK)
@@ -965,7 +1068,15 @@ namespace AdvLibrary.ForgeApi
                 streamWriter.Write(fileContent);
             }*/
 
-            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            HttpWebResponse httpResponse;
+            do
+            {
+                httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if (checkLimit(httpResponse.Headers).Result)
+                    break;
+
+            } while (true);
+
             using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
             {
                 var result = streamReader.ReadToEnd();
@@ -993,8 +1104,16 @@ namespace AdvLibrary.ForgeApi
 
             
             try {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
-                if(httpResponse.StatusCode == HttpStatusCode.OK)
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
+
+                if (httpResponse.StatusCode == HttpStatusCode.OK)
                 {
                     JObject json;
                     using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
@@ -1033,7 +1152,13 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1;
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if(result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -1069,7 +1194,15 @@ namespace AdvLibrary.ForgeApi
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
-                HttpResponseMessage result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                HttpResponseMessage result1 ;
+
+                do
+                {
+                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
+                    if (checkLimit(result1.Headers).Result)
+                        break;
+                } while (true);
+
                 jsonResponse = result1.Content.ReadAsStringAsync().Result;
                 if (result1.StatusCode == HttpStatusCode.OK)
                 {
@@ -1128,7 +1261,14 @@ namespace AdvLibrary.ForgeApi
 
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
                 if (httpResponse.StatusCode == HttpStatusCode.OK)
                 {
                     JObject json;
@@ -1186,7 +1326,15 @@ namespace AdvLibrary.ForgeApi
 
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
+
                 if (httpResponse.StatusCode == HttpStatusCode.OK)
                 {
                     JObject json;
@@ -1227,7 +1375,15 @@ namespace AdvLibrary.ForgeApi
             }*/
             try
             {
-                var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                HttpWebResponse httpResponse;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
+
+                } while (true);
+
                 if (httpResponse.StatusCode == HttpStatusCode.OK)
                 {
                     JObject json;
@@ -1264,15 +1420,54 @@ namespace AdvLibrary.ForgeApi
             httpRequest.Headers["cache-control"] = "no-cache";
 
             var resultstring = "";
-            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            HttpWebResponse httpResponse;
+            do
+            {
+                httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                if (checkLimit(httpResponse.Headers).Result)
+                    break;
+
+            } while (true);
+                                                
             using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
             {
+   
                 var result = streamReader.ReadToEnd();
                 resultstring = result;
             }
             return resultstring;
         }
-        #endregion*/
+
+
+
         #endregion
+        #endregion
+
+
+        private async Task<bool> checkLimit(HttpResponseHeaders headers)
+        {
+            var retryafter = 0;
+            if (headers.RetryAfter != null && headers.RetryAfter.ToString() != "")
+            {
+                retryafter = int.Parse(headers.RetryAfter.ToString());
+                Console.WriteLine($"Quota limit exceed. Retry after {retryafter} seconds");
+                await Task.Delay((retryafter + 1) * 1000);
+                return false;
+            }
+            return true;
+        }
+
+        private async Task<bool> checkLimit(WebHeaderCollection header)
+        {
+            var retryafter = 0;
+            if (header["RetryAfter"] != null && header["RetryAfter"].ToString() != "")
+            {
+                retryafter = int.Parse(header["RetryAfter"].ToString());
+                Console.WriteLine($"Quota limit exceed. Retry after {retryafter} seconds");
+                await Task.Delay((retryafter + 1) * 1000);
+                return false;
+            }
+            return true;
+        }
     }
 }
