@@ -46,25 +46,34 @@ namespace AdvExampleApp
             ////////////////here, start the design automation
             var dtoken = authenticate.GetDesignAutomationToken();
             var designAutomation = new DesignAutomation(dtoken);
-            
-            //            designAutomation.DeleteNickName();
 
+            //            designAutomation.DeleteNickName();
+            designAutomation.DeleteNickName();
             var nickname = designAutomation.GetNickName();
 
             var tempBundles = designAutomation.GetAllBundles(nickname);
             var tempActivities = designAutomation.GetActivitys(nickname);
             if (string.IsNullOrEmpty(nickname) || (tempActivities.Count==0 || tempActivities==null || tempBundles.Count == 0 || tempBundles == null)) ///if user didn't create nickname
             {
-                Console.WriteLine("Please enter your nickname:");
-                var tempNickname=Console.ReadLine();
-
-                ////you can create nickname when you have no previous data
-                /// in other case, you have to delete nickname first using designAutomation.DeleteNickName();, then you can create nickname what you want again
-                if (designAutomation.CreateNickName(tempNickname))
+                do
                 {
-                    nickname = tempNickname;
-                    Console.WriteLine("Your Nickname created successfully");
-                }
+                    Console.WriteLine("Please enter your nickname:");
+                    var tempNickname = Console.ReadLine();
+
+                    ////you can create nickname when you have no previous data
+                    /// in other case, you have to delete nickname first using designAutomation.DeleteNickName();, then you can create nickname what you want again
+                    if (designAutomation.CreateNickName(tempNickname))
+                    {
+                        nickname = tempNickname;
+                        Console.WriteLine("Your Nickname created successfully");
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("You have other data or nick name already exist. Plz choose another name");
+                    }
+                } while (true);
+
             }
 
             ///////for task 4
@@ -140,7 +149,7 @@ namespace AdvExampleApp
                     Console.WriteLine("Plz write your updating description");
                     var updatingDescription = Console.ReadLine();
                     //update part//
-                    if (designAutomation.UpdateExistingAppBundle(appId, updatingDescription, "D:\\ttttt\\CountIt.zip", alias))
+                    if (designAutomation.UpdateExistingAppBundle(appId, updatingDescription, "D:\\ttttt\\AdvAutoCount.zip", alias))
                     {
                         Console.WriteLine("updated");
                     }
@@ -260,13 +269,8 @@ namespace AdvExampleApp
             ///
             ///The Bucket Key must be unique throughout all of the OSS service. 
             string bucketname = "pdragon0512bucket"; //// must be [a-z],[0-9],[_]
-            string signedUrlForUpload = "";
-            string uploadUrlResponseKey = "";
             var objectKey = "result";
             designAutomation.CreateBucket(bucketname);
-
-            signedUrlForUpload = designAutomation.GenerateSignedS3Url(bucketname, objectKey, out uploadUrlResponseKey);
-
             /////generating s3 url part for addin
             ///
 

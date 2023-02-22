@@ -113,13 +113,22 @@ namespace AdvLibrary.ForgeApi
                 streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
             }
             HttpWebResponse httpResponse;
-            do
+            
+            try
             {
-                httpResponse = (HttpWebResponse)httpRequest.GetResponse();
-                if (checkLimit(httpResponse.Headers).Result)
-                    break;
+                do
+                {
+                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                    if (checkLimit(httpResponse.Headers).Result)
+                        break;
 
-            } while (true);
+                } while (true);
+            }
+            catch(Exception e)
+            {
+                return false;
+            }
+
 
             try
             {
@@ -756,9 +765,6 @@ namespace AdvLibrary.ForgeApi
             {
                 Console.WriteLine(e);
             }
-
-//            JObject json = JObject.Parse(jsonResponse);
-
             return false;
         }
 
@@ -877,7 +883,6 @@ namespace AdvLibrary.ForgeApi
                 }
                 if (httpResponse.StatusCode == HttpStatusCode.Conflict)
                 {
-                    /// in case of conflict, so change the name
                     return false;
                 }
             }
@@ -892,8 +897,6 @@ namespace AdvLibrary.ForgeApi
 
         #region For Task 6
 
-        public string BucketKey;
-//        public string 
         public bool CreateBucket(string bucketkey)
         {
             object sedingData = new
@@ -946,237 +949,6 @@ namespace AdvLibrary.ForgeApi
 
         }
 
-        public string uploadkey;
-        public string uploadExpiration;
-        public string urlExpiration;
-        public List<string> uploadUrls;
-
-        /// <summary>
-        /// for single file
-        /// </summary>
-        /// <param name="bucketname"></param>
-        /// <param name="objectkey"></param>
-        /// <returns>signed url string</returns>
-        public string GenerateSignedS3Url(string bucketname,string objectkey,out string uploadUrlResponseKey)
-        {
-
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-            string jsonResponse = string.Empty;
-            HttpResponseHeaders headers = null;
-
-            try
-            {
-                HttpResponseMessage result1;
-                do
-                {
-                    result1 = client.GetAsync($"https://developer.api.autodesk.com/oss/v2/buckets/{bucketname}/objects/{objectkey}/signeds3upload").GetAwaiter().GetResult();
-                    if (checkLimit(result1.Headers).Result)
-                        break;
-                } while (true);
-
-                jsonResponse = result1.Content.ReadAsStringAsync().Result;
-                headers = result1.Headers;
-                if(result1.StatusCode == HttpStatusCode.OK)
-                {
-                    JObject json = JObject.Parse(jsonResponse);
-                    uploadkey = json["uploadKey"].ToString();
-                    uploadExpiration = json["uploadExpiration"].ToString();
-                    urlExpiration = json["urlExpiration"].ToString();
-                    uploadUrls = new List<string>();
-                    JArray dataArray = (JArray)json["urls"];
-                    for(var i=0;i<dataArray.Count;i++)
-                    {
-                        uploadUrls.Add(dataArray[i].ToString());
-                    }
-                    uploadUrlResponseKey = uploadkey;
-                    return uploadUrls[0];
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-            uploadUrlResponseKey = "";
-            return "";
-        }
-        /*
-        public void GenerateSignedS3Urls(string bucketName)
-        {
-            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketName}/objects/random_file.bin/signeds3upload";
-
-            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
-            httpRequest.Method = "POST";
-
-            httpRequest.Headers["Authorization"] = "Bearer eYeL5gYxAT2j3u9TEerxoJoToNbi";
-            httpRequest.ContentType = "application/json";
-            httpRequest.Headers["x-ads-meta-Content-Type"] = "application/octet-stream";
-
-            var data = @"{
-    ""uploadKey"": ""{UPLOAD_KEY_PROVIDED_FROM_GET_UPLOAD_URLS_RESPONSE}""
-  }";
-
-            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
-            {
-                streamWriter.Write(data);
-            }
-
-            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                var result = streamReader.ReadToEnd();
-            }
-
-            Console.WriteLine(httpResponse.StatusCode);
-
-        }*/
-
-        public bool UploadFileToSignedUrl(string signedurl,string filePath)
-        {
-            var url = signedurl;
-
-            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
-            httpRequest.Method = "PUT";
-
-            httpRequest.ContentType = "text/plain";
-
-            Stream rs = httpRequest.GetRequestStream();
-            FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            byte[] buffer = new byte[4096];
-            int bytesRead = 0;
-            while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) != 0)
-            {
-                rs.Write(buffer, 0, bytesRead);
-            }
-            fileStream.Close();
-            rs.Close();
-            /*
-            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
-            {
-                FileStream fileStream = File.OpenRead(filePath);
-                byte[] buffer = new byte[4096];
-                int bytesRead = 0;
-                while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) != 0)
-                {
-                    streamWriter.Write(buffer, 0, bytesRead);
-                }
-                fileStream.Close();
-
-
-                var streamContent = new StreamContent(fileStream);
-                var fileContent = new ByteArrayContent(streamContent.ReadAsByteArrayAsync().Result);
-                streamWriter.Write(fileContent);
-            }*/
-
-            HttpWebResponse httpResponse;
-            do
-            {
-                httpResponse = (HttpWebResponse)httpRequest.GetResponse();
-                if (checkLimit(httpResponse.Headers).Result)
-                    break;
-
-            } while (true);
-
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                var result = streamReader.ReadToEnd();
-            }
-
-            return true;
-        }
-
-        public string CompleteUploading(string bucketKey,string objectKey,string uploadUrlResponseKey)
-        {
-            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
-
-            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
-            httpRequest.Method = "POST";
-
-            httpRequest.Headers["Authorization"] = "Bearer "+token;
-            httpRequest.ContentType = "application/json";
-
-            var data = new { uploadKey = uploadUrlResponseKey  };
-
-            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
-            {
-                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
-            }
-
-            
-            try {
-                HttpWebResponse httpResponse;
-                do
-                {
-                    httpResponse = (HttpWebResponse)httpRequest.GetResponse();
-                    if (checkLimit(httpResponse.Headers).Result)
-                        break;
-
-                } while (true);
-
-                if (httpResponse.StatusCode == HttpStatusCode.OK)
-                {
-                    JObject json;
-                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-                    {
-                        var result = streamReader.ReadToEnd();
-                        json = JObject.Parse(result);
-                    }
-                    var objectId = json["objectId"].ToString();
-                    return objectId;
-                }
-                
-            }
-            catch (Exception e)
-            {
-
-            }
-
-            return "";
-        }
-
-
-        public string GetDownloadUrl(string bucketkey, string objectkey)
-        {
-            object sedingData = new {};
-
-            var sendJsonData = Newtonsoft.Json.JsonConvert.SerializeObject(sedingData).ToString();
-            string jsonResponse = string.Empty;
-            var client = new HttpClient();
-            client.BaseAddress = new Uri("https://developer.api.autodesk.com/");
-            client.DefaultRequestHeaders
-                .Accept
-                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"oss/v2/buckets/{bucketkey}/objects/{objectkey}/signed");
-            request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
-            try
-            {
-                HttpResponseMessage result1;
-                do
-                {
-                    result1 = client.SendAsync(request).GetAwaiter().GetResult();
-                    if (checkLimit(result1.Headers).Result)
-                        break;
-                } while (true);
-                jsonResponse = result1.Content.ReadAsStringAsync().Result;
-                if(result1.StatusCode == HttpStatusCode.OK)
-                {
-                    JObject json = JObject.Parse(jsonResponse);
-                    return json["signedUrl"].ToString();
-                }
-                else
-                {
-                    return "";
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-            return "";
-        }
-
         public string GetUploadUrl(string bucketkey, string objectkey)
         {
             object sedingData = new { };
@@ -1190,7 +962,7 @@ namespace AdvLibrary.ForgeApi
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"oss/v2/buckets/{bucketkey}/objects/{objectkey}/signed?access=readwrite");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"oss/v2/buckets/{bucketkey}/objects/{objectkey}/signed?access=readwrite&useCdn=true");
             request.Content = new StringContent(sendJsonData, Encoding.UTF8, "application/json");
             try
             {
@@ -1220,9 +992,10 @@ namespace AdvLibrary.ForgeApi
             }
             return "";
         }
+        
         #endregion
 
-        
+
         #region For Task 7
 
         //return workItemId
@@ -1366,13 +1139,6 @@ namespace AdvLibrary.ForgeApi
 
             httpRequest.Headers["Authorization"] = "Bearer " + token;
             httpRequest.ContentType = "application/json";
-/*
-            var data = new {};
-
-            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
-            {
-                streamWriter.Write(Newtonsoft.Json.JsonConvert.SerializeObject(data).ToString());
-            }*/
             try
             {
                 HttpWebResponse httpResponse;
@@ -1396,8 +1162,9 @@ namespace AdvLibrary.ForgeApi
                     if(status == "success")
                     {
                         var a = 1;
+                        return status;
                     }
-                    return status;
+                    return status + json.ToString();
                 }
 
             }
@@ -1411,7 +1178,7 @@ namespace AdvLibrary.ForgeApi
 
         public string GetResultString(string buketkey, string objectkey)
         {
-            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{buketkey}/objects/{objectkey}";
+            var url = $"https://developer.api.autodesk.com/oss/v2/buckets/{buketkey}/objects/{objectkey}/signeds3download";
 
             var httpRequest = (HttpWebRequest)WebRequest.Create(url);
 
